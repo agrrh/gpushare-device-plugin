@@ -15,6 +15,10 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
+const (
+	serverMaxRecvMsgSize = 4194304 * 2  // Double default limit
+)
+
 // NvidiaDevicePlugin implements the Kubernetes device plugin API
 type NvidiaDevicePlugin struct {
 	devs                 []*pluginapi.Device
@@ -114,7 +118,11 @@ func (m *NvidiaDevicePlugin) Start() error {
 		return err
 	}
 
-	m.server = grpc.NewServer([]grpc.ServerOption{}...)
+	serverOptions := []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(serverMaxRecvMsgSize),
+	}
+
+	m.server = grpc.NewServer(serverOptions...)
 	pluginapi.RegisterDevicePluginServer(m.server, m)
 
 	go m.server.Serve(sock)
